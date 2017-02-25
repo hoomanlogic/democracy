@@ -16,105 +16,68 @@ class Politicians extends Component {
     /******************************************
      * COMPONENT LIFECYCLE
      *****************************************/
-    constructor (props) {
+    constructor(props) {
         super(props);
         this.state = {
-            politicians: null,
-            votes: null,
+            list: null,
             styles: getStyles(props.theme),
         };
     }
 
-    componentDidMount () {
+    componentDidMount() {
         var { db } = this.props;
-        this.props.db.ref('politician').once('value', snapshot => {
+        this.props.db.ref('body/usa-senate/division').once('value', snapshot => {
             // Convert object snapshot to array
-            var politicians = snapshot.val();
-            politicians = Object.keys(snapshot.val()).map(key => politicians[key]);
+            var divisions = snapshot.val();
+            divisions = Object.keys(snapshot.val()).map(key => { return { name: divisions[key], value: key }; });
 
             // Sort by last name first
-            politicians.sort((a, b) => {
-                if (a.sortName < b.sortName) {
+            divisions.sort((a, b) => {
+                if (a.name < b.name) {
                     return -1;
                 }
-                else if (a.sortName > b.sortName) {
+                else if (a.name > b.name) {
                     return 1;
                 }
                 return 0;
             });
 
+            // Add ability to view all
+            divisions.unshift({ name: 'All', value: '' });
+
             // Set component state
-            this.setState({ politicians });
-        });
-
-        this.props.db.ref('vote/usa-senate').once('value', snapshot => {
-            // Convert object snapshot to array
-            var votes = snapshot.val();
-            votes = Object.keys(snapshot.val()).map(key => votes[key]);
-
-            // Sort by descending date
-            votes.sort((a, b) => {
-                if (a.date < b.date) {
-                    return 1;
-                }
-                else if (a.date > b.date) {
-                    return -1;
-                }
-                return 0;
+            this.setState({
+                list: divisions
             });
-
-            // Set component state
-            this.setState({ votes });
         });
     }
 
     /***************************************************************
      * EVENT HANDLING
      **************************************************************/
-    pressRow (row) {
-        console.log(row);
+    pressRow(row) {
+        this.props.onSubscribe(row.value);
+        this.props.onTab('POLITICIANS');
     }
 
     /***************************************************************
      * RENDERING
      **************************************************************/
-    render () {
+    render() {
         var { body, division, style, theme } = this.props;
-        var { politicians, styles, votes } = this.state;
+        var { list, styles } = this.state;
         var filteredList;
 
-        if (!politicians || !votes) {
+        if (!list) {
             return <Loading theme={theme} />;
         }
 
         if (!body) {
-            filteredList = politicians;
+            filteredList = list;
         }
         else {
-            filteredList = politicians.filter(row => !!row.memberOf[body] && (!division || division === '*' || row.memberOf[body].division === division));
+            filteredList = list.filter(row => !!row.memberOf[body] && (!division || division === '*' || row.memberOf[body].division === division));
         }
-
-        filteredList = filteredList.map(row => {
-            var votingScore = 0;
-            if (row.memberOf['usa-senate']) {
-                votes.forEach(vote => {
-                    switch (vote.results[row.memberOf['usa-senate'].id]) {
-                        case 0: // Nay on contentious vote
-                            votingScore = votingScore + 1;
-                            break;
-                        case 1: // Yea on contentious vote
-                            votingScore = votingScore - 2;
-                            break;
-                        case -1: // Did not vote on contentious vote
-                            votingScore = votingScore - 1;
-                    }
-                });
-            }
-            return { 
-                ...row,
-                score: votingScore
-            };
-        });
 
         return (
             <View style={style}>
@@ -123,13 +86,12 @@ class Politicians extends Component {
                         {
                             filteredList.map((row, i) => (
                                 <ListItem
-                                    avatar={{ uri: 'https:' + row.icon }}
                                     containerStyle={styles.listItem}
                                     titleStyle={styles.listItemTitle}
                                     key={i}
                                     onPress={() => this.pressRow(row)}
                                     roundAvatar
-                                    title={`${row.name} [${row.score}]`}
+                                    title={row.name}
                                     underlayColor={styles.icon}
                                     avatarStyle={styles.icon}
                                 />
@@ -163,6 +125,17 @@ const getStyles = function (theme) {
         listItemTitle: {
             color: theme.foreColor,
         },
+        actionButton: {
+            width: 60,
+            height: 60,
+            position: 'absolute',
+            bottom: 10,
+            right: 40
+        },
+        actionIcon: {
+            backgroundColor: theme.bgColorHigh,
+            color: theme.foreColor,
+        },
         icon: {
             backgroundColor: noBackground,
         },
@@ -174,7 +147,4 @@ const getStyles = function (theme) {
     });
 };
 
-/***************************************************************
- * EXPORT
- **************************************************************/
 export default Politicians;
