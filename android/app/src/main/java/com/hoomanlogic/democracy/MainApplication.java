@@ -3,6 +3,7 @@ package com.hoomanlogic.democracy;
 import android.app.Application;
 import android.util.Log;
 
+import org.pgsqlite.SQLitePluginPackage;
 import com.facebook.CallbackManager;
 import com.facebook.FacebookSdk;
 import com.facebook.reactnative.androidsdk.FBSDKPackage;
@@ -33,6 +34,7 @@ public class MainApplication extends Application implements ReactApplication {
         @Override
         protected List<ReactPackage> getPackages() {
             return Arrays.<ReactPackage>asList(
+                new SQLitePluginPackage(),
                 new MainReactPackage(),
                 new FBSDKPackage(mCallbackManager)
             );
