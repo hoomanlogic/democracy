@@ -1,7 +1,7 @@
 
 import React from 'react';
 import {
-   ProgressBar,
+   ActivityIndicator,
    View
 } from 'react-native';
 
@@ -13,7 +13,7 @@ function Loading ({ theme }) {
    };
    return (
       <View style={style}>
-         <ProgressBar styleAttr="Large" />
+         <ActivityIndicator size="large" />
       </View>
    );
 }

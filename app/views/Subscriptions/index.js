@@ -81,7 +81,7 @@ class Politicians extends Component {
 
         return (
             <View style={style}>
-                <ScrollView keyboardShouldPersistTaps>
+                <ScrollView keyboardShouldPersistTaps="always">
                     <List containerStyle={styles.list}>
                         {
                             filteredList.map((row, i) => (
@@ -92,7 +92,7 @@ class Politicians extends Component {
                                     onPress={() => this.pressRow(row)}
                                     roundAvatar
                                     title={row.name}
-                                    underlayColor={styles.icon}
+                                    underlayColor="transparent"
                                     avatarStyle={styles.icon}
                                 />
                             ))

@@ -140,7 +140,7 @@ class Issues extends Component {
             //     );
             // })}
             pane = (
-                <ScrollView keyboardShouldPersistTaps>
+                <ScrollView keyboardShouldPersistTaps="always">
                     <View><Text>{issues.filter(a => a.key === selectedIssue)[0].name}</Text></View>
                     <List containerStyle={styles.list}>
                         {
@@ -151,7 +151,7 @@ class Issues extends Component {
                                     key={i}
                                     onPress={() => this.pressActivityRow(row)}
                                     title={row.text}
-                                    underlayColor={styles.icon}
+                                    underlayColor="transparent"
                                 />
                             ))
                         }
@@ -161,7 +161,7 @@ class Issues extends Component {
         }
         else {            
             pane = (
-                <ScrollView keyboardShouldPersistTaps>
+                <ScrollView keyboardShouldPersistTaps="always">
                     <List containerStyle={styles.list}>
                         {
                             issues.map((row, i) => (
@@ -173,7 +173,7 @@ class Issues extends Component {
                                     onPress={() => this.pressRow(row)}
                                     roundAvatar
                                     title={row.name}
-                                    underlayColor={styles.icon}
+                                    underlayColor="transparent"
                                     avatarStyle={styles.icon}
                                 />
                             ))

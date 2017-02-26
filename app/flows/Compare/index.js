@@ -41,7 +41,7 @@ class Compare extends Component {
      * RENDERING
      *****************************************/
     render() {
-        var { db, dimensions, location, theme } = this.props;
+        var { db, dimensions, location, sqldb, theme } = this.props;
         var { selectedTab, styles } = this.state;
 
         var isIssues = selectedTab === 'ISSUES';
@@ -64,6 +64,7 @@ class Compare extends Component {
                 >
                     <Issues
                         db={db}
+                        sqldb={sqldb}
                         dimensions={dimensions}
                         style={styles.content}
                         theme={theme}
@@ -80,6 +81,7 @@ class Compare extends Component {
                         body="usa-senate"
                         division={location}
                         db={db}
+                        sqldb={sqldb}
                         dimensions={dimensions}
                         style={styles.content}
                         theme={theme}
@@ -97,6 +99,7 @@ class Compare extends Component {
                         onTab={(tab) => this.changeTab(tab)}
                         current={location}
                         db={db}
+                        sqldb={sqldb}
                         dimensions={dimensions}
                         style={styles.content}
                         theme={theme}

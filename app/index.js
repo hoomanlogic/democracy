@@ -13,6 +13,9 @@ import Login from './flows/Login';
 // CONFIGS
 import themes from './themes';
 import firebaseConfig from '../firebase.config';
+import SQLite from 'react-native-sqlite-storage';
+import Loading from 'democracy/app/components/Loading';
+SQLite.enablePromise(true);
 
 export default class App extends Component {
     /******************************************
@@ -37,6 +40,26 @@ export default class App extends Component {
             accessToken: false,
             location
         };
+
+        SQLite.openDatabase({
+            name: 'democracy.db', createFromLocation: '~databases/democracy.db', readOnly: true
+        })
+        .then((sqldb) => {
+            this.sqldb = sqldb;
+            this.setState({ isSqlDbReady: true });
+            // this.sqldb.transaction((tx) => {
+            //     tx.executeSql('SELECT * FROM body', [], (tx, results) => {
+            //         var len = results.rows.length;
+            //         for (let i = 0; i < len; i++) {
+            //             let row = results.rows.item(i);
+            //             console.log(row);
+            //         }
+            //     });
+            // });
+        })
+        .catch((err) => {
+            console.log(err);
+        });
     }
 
     componentDidMount () {
@@ -60,10 +83,16 @@ export default class App extends Component {
      * RENDERING
      *****************************************/
     render() {
-        var { accessToken, dimensions, location, styles, theme } = this.state;
+        var { accessToken, dimensions, location, isSqlDbReady, styles, theme } = this.state;
         var flow;
+
+
+        if (!isSqlDbReady) {
+            return <Loading theme={theme} />;
+        }
+
         // if (accessToken) {
-        flow = <Compare db={this.db} onSubscribe={this.updateLocation} { ...{ dimensions, location, theme } }/>;
+        flow = <Compare db={this.db} sqldb={this.sqldb} onSubscribe={this.updateLocation} { ...{ dimensions, location, theme } }/>;
         // }
         // else {            
         //     flow = <Login ref={ref => this.login = ref} onAuthenticated={(accessToken) => this.setState({ accessToken })} { ...{ dimensions, theme } }/>

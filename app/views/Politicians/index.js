@@ -26,18 +26,28 @@ class Politicians extends Component {
     }
 
     componentDidMount () {
-        var { db } = this.props;
-        this.props.db.ref('politician').once('value', snapshot => {
-            // Convert object snapshot to array
-            var politicians = snapshot.val();
-            politicians = Object.keys(snapshot.val()).map(key => politicians[key]);
+        var { body, sqldb } = this.props;
+
+
+        sqldb.executeSql(
+            `SELECT p.icon, p.name, p.sort, m.termEnd, m.refId
+            FROM politician p INNER JOIN membership m ON p.id = m.politicianId
+            WHERE m.bodyId = '${body}'`
+        )
+        .then(([results]) => {
+            var len = results.rows.length;
+            var politicians = [];
+            for (let i = 0; i < len; i++) {
+                let row = results.rows.item(i);
+                politicians.push(row);
+            }
 
             // Sort by last name first
             politicians.sort((a, b) => {
-                if (a.sortName < b.sortName) {
+                if (a.sort < b.sort) {
                     return -1;
                 }
-                else if (a.sortName > b.sortName) {
+                else if (a.sort > b.sort) {
                     return 1;
                 }
                 return 0;
@@ -45,27 +55,30 @@ class Politicians extends Component {
 
             // Set component state
             this.setState({ politicians });
+        })
+        .catch((err) => {
+            console.log(err);
         });
 
-        this.props.db.ref('vote/usa-senate').once('value', snapshot => {
-            // Convert object snapshot to array
-            var votes = snapshot.val();
-            votes = Object.keys(snapshot.val()).map(key => votes[key]);
+        // db.ref('vote/usa-senate').once('value', snapshot => {
+        //     // Convert object snapshot to array
+        //     var votes = snapshot.val();
+        //     votes = Object.keys(snapshot.val()).map(key => votes[key]);
 
-            // Sort by descending date
-            votes.sort((a, b) => {
-                if (a.date < b.date) {
-                    return 1;
-                }
-                else if (a.date > b.date) {
-                    return -1;
-                }
-                return 0;
-            });
+        //     // Sort by descending date
+        //     votes.sort((a, b) => {
+        //         if (a.date < b.date) {
+        //             return 1;
+        //         }
+        //         else if (a.date > b.date) {
+        //             return -1;
+        //         }
+        //         return 0;
+        //     });
 
-            // Set component state
-            this.setState({ votes });
-        });
+        //     // Set component state
+        //     this.setState({ votes });
+        // });
     }
 
     /***************************************************************
@@ -81,47 +94,17 @@ class Politicians extends Component {
     render () {
         var { body, division, style, theme } = this.props;
         var { politicians, styles, votes } = this.state;
-        var filteredList;
 
-        if (!politicians || !votes) {
+        if (!politicians) {
             return <Loading theme={theme} />;
         }
 
-        if (!body) {
-            filteredList = politicians;
-        }
-        else {
-            filteredList = politicians.filter(row => !!row.memberOf[body] && (!division || division === '*' || row.memberOf[body].division === division));
-        }
-
-        filteredList = filteredList.map(row => {
-            var votingScore = 0;
-            if (row.memberOf['usa-senate']) {
-                votes.forEach(vote => {
-                    switch (vote.results[row.memberOf['usa-senate'].id]) {
-                        case 0: // Nay on contentious vote
-                            votingScore = votingScore + 1;
-                            break;
-                        case 1: // Yea on contentious vote
-                            votingScore = votingScore - 2;
-                            break;
-                        case -1: // Did not vote on contentious vote
-                            votingScore = votingScore - 1;
-                    }
-                });
-            }
-            return { 
-                ...row,
-                score: votingScore
-            };
-        });
-
         return (
             <View style={style}>
-                <ScrollView keyboardShouldPersistTaps>
+                <ScrollView keyboardShouldPersistTaps="always">
                     <List containerStyle={styles.list}>
                         {
-                            filteredList.map((row, i) => (
+                            politicians.map((row, i) => (
                                 <ListItem
                                     avatar={{ uri: 'https:' + row.icon }}
                                     containerStyle={styles.listItem}
@@ -129,8 +112,8 @@ class Politicians extends Component {
                                     key={i}
                                     onPress={() => this.pressRow(row)}
                                     roundAvatar
-                                    title={`${row.name} [${row.score}]`}
-                                    underlayColor={styles.icon}
+                                    title={row.name}
+                                    underlayColor="transparent"
                                     avatarStyle={styles.icon}
                                 />
                             ))
@@ -139,6 +122,52 @@ class Politicians extends Component {
                 </ScrollView>
             </View>
         );
+
+        // filteredList = filteredList.map(row => {
+        //     var votingScore = 0;
+        //     if (row.memberOf['usa-senate']) {
+        //         votes.forEach(vote => {
+        //             switch (vote.results[row.memberOf['usa-senate'].id]) {
+        //                 case 0: // Nay on contentious vote
+        //                     votingScore = votingScore + 1;
+        //                     break;
+        //                 case 1: // Yea on contentious vote
+        //                     votingScore = votingScore - 2;
+        //                     break;
+        //                 case -1: // Did not vote on contentious vote
+        //                     votingScore = votingScore - 1;
+        //             }
+        //         });
+        //     }
+        //     return { 
+        //         ...row,
+        //         score: votingScore
+        //     };
+        // });
+
+        // return (
+        //     <View style={style}>
+        //         <ScrollView keyboardShouldPersistTaps="always">
+        //             <List containerStyle={styles.list}>
+        //                 {
+        //                     filteredList.map((row, i) => (
+        //                         <ListItem
+        //                             avatar={{ uri: 'https:' + row.icon }}
+        //                             containerStyle={styles.listItem}
+        //                             titleStyle={styles.listItemTitle}
+        //                             key={i}
+        //                             onPress={() => this.pressRow(row)}
+        //                             roundAvatar
+        //                             title={`${row.name} [${row.score}]`}
+        //                             underlayColor={styles.icon}
+        //                             avatarStyle={styles.icon}
+        //                         />
+        //                     ))
+        //                 }
+        //             </List>
+        //         </ScrollView>
+        //     </View>
+        // );
     }
 }
 
