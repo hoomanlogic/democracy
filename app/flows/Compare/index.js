@@ -5,6 +5,7 @@ import {
 import {
     Tabs, Tab, Icon
 } from 'react-native-elements';
+import Issues from 'democracy/app/views/Issues';
 import Politicians from 'democracy/app/views/Politicians';
 import Subscriptions from 'democracy/app/views/Subscriptions';
 
@@ -43,8 +44,10 @@ class Compare extends Component {
         var { db, dimensions, location, theme } = this.props;
         var { selectedTab, styles } = this.state;
 
+        var isIssues = selectedTab === 'ISSUES';
         var isPoliticians = selectedTab === 'POLITICIANS';
         var isSubscriptions = selectedTab === 'SUBSCRIPTIONS';
+        var renderIssuesIcon = () => <Icon name="comments" type="foundation" size={26}/>;
         var renderPoliticiansIcon = () => <Icon name="torsos-all" type="foundation" size={26}/>;
         var renderSubscriptionsIcon = () => <Icon name="list" type="foundation" size={26}/>;
 
@@ -52,6 +55,20 @@ class Compare extends Component {
             <Tabs
                 tabBarStyle={styles.tabBar}
             >
+                <Tab
+                    onPress={() => this.changeTab('ISSUES')}
+                    renderIcon={renderIssuesIcon}
+                    renderSelectedIcon={renderIssuesIcon}
+                    selected={isIssues}
+                    title={isIssues ? 'ISSUES' : null}
+                >
+                    <Issues
+                        db={db}
+                        dimensions={dimensions}
+                        style={styles.content}
+                        theme={theme}
+                    />
+                </Tab>
                 <Tab
                     onPress={() => this.changeTab('POLITICIANS')}
                     renderIcon={renderPoliticiansIcon}
