@@ -29,7 +29,7 @@ class Issues extends Component {
 
     componentDidMount () {
         var { db } = this.props;
-        this.props.db.ref('issue').once('value', snapshot => {
+        db.ref('issue').once('value', snapshot => {
             // Convert object snapshot to array
             var issues = snapshot.val();
             issues = Object.keys(snapshot.val()).map(key => { return { ...issues[key], key }; });
@@ -49,7 +49,7 @@ class Issues extends Component {
             this.setState({ issues });
         });
 
-        this.props.db.ref('vote/usa-senate').once('value', snapshot => {
+        db.ref('vote/usa-senate').once('value', snapshot => {
             // Convert object snapshot to array
             var votes = snapshot.val();
             votes = Object.keys(snapshot.val()).map(key => votes[key]);
@@ -82,6 +82,7 @@ class Issues extends Component {
     }
 
     pressRow (row) {
+        var { db } = this.props;
         var activityMap = {};
         this.setState({
             selectedIssue: row.key,
@@ -91,7 +92,7 @@ class Issues extends Component {
         var keys = Object.keys(row.activity);
         keys.reverse();
         keys.forEach(key => {
-            this.props.db.ref(row.activity[key]).once('value', snapshot => {
+            db.ref(row.activity[key]).once('value', snapshot => {
                 // Convert object snapshot to array
                 var activity = snapshot.val();
 
@@ -106,9 +107,9 @@ class Issues extends Component {
      * RENDERING
      **************************************************************/
     render () {
-        var { body, division, style, theme } = this.props;
+        var { style, theme } = this.props;
         var { activityMap, issues, selectedIssue, styles } = this.state;
-        var list, keys, pane;
+        var keys, pane;
 
         if (!issues) {
             return <Loading theme={theme} />;

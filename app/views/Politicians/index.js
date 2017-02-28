@@ -92,11 +92,11 @@ class Politicians extends Component {
      * RENDERING
      **************************************************************/
     render () {
-        var { body, division, style, theme } = this.props;
-        var { politicians, styles, votes } = this.state;
+        var { style } = this.props;
+        var { politicians, styles } = this.state;
 
         if (!politicians) {
-            return <Loading theme={theme} />;
+            return <View style={style}><Loading/></View>;
         }
 
         return (

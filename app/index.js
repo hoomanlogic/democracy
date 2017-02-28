@@ -7,21 +7,22 @@ import {
     View
 } from 'react-native';
 import firebase from 'firebase';
+import SQLite from 'react-native-sqlite-storage';
 // COMPONENTS
 import Compare from './flows/Compare';
-import Login from './flows/Login';
+import Loading from 'democracy/app/components/Loading';
+//import Login from './flows/Login';
 // CONFIGS
 import themes from './themes';
 import firebaseConfig from '../firebase.config';
-import SQLite from 'react-native-sqlite-storage';
-import Loading from 'democracy/app/components/Loading';
+
 SQLite.enablePromise(true);
 
 export default class App extends Component {
     /******************************************
      * COMPONENT LIFECYCLE
      *****************************************/
-    constructor(props) {
+    constructor (props) {
         super(props);
 
         var location;
@@ -29,8 +30,21 @@ export default class App extends Component {
         // Get initial device dimensions (orientation changes handled by View.onLayout)
         var dimensions = Dimensions.get('window');
 
-        // Get data
+        // Initialize connection to Firebase db
+        firebase.initializeApp(firebaseConfig);
         this.db = firebase.database();
+
+        // Initialize connection to SQLite db
+        SQLite.openDatabase({
+            name: 'democracy.db', createFromLocation: '~databases/democracy.db', readOnly: true
+        })
+        .then((sqldb) => {
+            this.sqldb = sqldb;
+            this.setState({ isSqlDbReady: true });
+        })
+        .catch((err) => {
+            console.error(err);
+        });
 
         // Get initial state
         this.state = {
@@ -40,26 +54,6 @@ export default class App extends Component {
             accessToken: false,
             location
         };
-
-        SQLite.openDatabase({
-            name: 'democracy.db', createFromLocation: '~databases/democracy.db', readOnly: true
-        })
-        .then((sqldb) => {
-            this.sqldb = sqldb;
-            this.setState({ isSqlDbReady: true });
-            // this.sqldb.transaction((tx) => {
-            //     tx.executeSql('SELECT * FROM body', [], (tx, results) => {
-            //         var len = results.rows.length;
-            //         for (let i = 0; i < len; i++) {
-            //             let row = results.rows.item(i);
-            //             console.log(row);
-            //         }
-            //     });
-            // });
-        })
-        .catch((err) => {
-            console.log(err);
-        });
     }
 
     componentDidMount () {
@@ -75,31 +69,32 @@ export default class App extends Component {
 
     updateLocation = (location) => {
         AsyncStorage.setItem('@hoomanlogic-democracy:location', location).then(() => {
-            this.setState({ location })
+            this.setState({ location });
         });
     }
 
     /******************************************
      * RENDERING
      *****************************************/
-    render() {
-        var { accessToken, dimensions, location, isSqlDbReady, styles, theme } = this.state;
-        var flow;
-
+    render () {
+        var { /*accessToken, */dimensions, location, isSqlDbReady, styles, theme } = this.state;
+        var content;
 
         if (!isSqlDbReady) {
-            return <Loading theme={theme} />;
+            content = <View style={styles.container}><Loading/></View>;
+        }
+        else {
+            // if (accessToken) {
+            content = <Compare db={this.db} sqldb={this.sqldb} onSubscribe={this.updateLocation} { ...{ dimensions, location, theme } }/>;
+            // }
+            // else {            
+            //     flow = <Login ref={ref => this.login = ref} onAuthenticated={(accessToken) => this.setState({ accessToken })} { ...{ dimensions, theme } }/>
+            // }
         }
 
-        // if (accessToken) {
-        flow = <Compare db={this.db} sqldb={this.sqldb} onSubscribe={this.updateLocation} { ...{ dimensions, location, theme } }/>;
-        // }
-        // else {            
-        //     flow = <Login ref={ref => this.login = ref} onAuthenticated={(accessToken) => this.setState({ accessToken })} { ...{ dimensions, theme } }/>
-        // }
         return (
             <View style={styles.container} onLayout={event => this.setState({ dimensions: event.nativeEvent.layout })}>
-                {flow}
+                {content}
             </View>
         );
     }
@@ -116,9 +111,3 @@ const getStyles = function (theme) {
         },
     });
 };
-
-/******************************************
- * INITIALIZATION
- *****************************************/
-// Initialize Database Connection
-firebase.initializeApp(firebaseConfig);

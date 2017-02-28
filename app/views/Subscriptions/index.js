@@ -16,7 +16,7 @@ class Politicians extends Component {
     /******************************************
      * COMPONENT LIFECYCLE
      *****************************************/
-    constructor(props) {
+    constructor (props) {
         super(props);
         this.state = {
             list: null,
@@ -24,9 +24,9 @@ class Politicians extends Component {
         };
     }
 
-    componentDidMount() {
+    componentDidMount () {
         var { db } = this.props;
-        this.props.db.ref('body/usa-senate/division').once('value', snapshot => {
+        db.ref('body/usa-senate/division').once('value', snapshot => {
             // Convert object snapshot to array
             var divisions = snapshot.val();
             divisions = Object.keys(snapshot.val()).map(key => { return { name: divisions[key], value: key }; });
@@ -55,7 +55,7 @@ class Politicians extends Component {
     /***************************************************************
      * EVENT HANDLING
      **************************************************************/
-    pressRow(row) {
+    pressRow (row) {
         this.props.onSubscribe(row.value);
         this.props.onTab('POLITICIANS');
     }
@@ -63,13 +63,13 @@ class Politicians extends Component {
     /***************************************************************
      * RENDERING
      **************************************************************/
-    render() {
+    render () {
         var { body, division, style, theme } = this.props;
         var { list, styles } = this.state;
         var filteredList;
 
         if (!list) {
-            return <Loading theme={theme} />;
+            return <Loading theme={theme}/>;
         }
 
         if (!body) {
