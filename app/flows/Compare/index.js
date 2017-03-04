@@ -13,7 +13,7 @@ class Compare extends Component {
     /******************************************
      * COMPONENT LIFECYCLE
      *****************************************/
-    constructor(props) {
+    constructor (props) {
         super(props);/**/
         // Get initial state
         this.state = {
@@ -22,7 +22,7 @@ class Compare extends Component {
         };
     }
 
-    componentWillReceiveProps(nextProps) {
+    componentWillReceiveProps (nextProps) {
         if (nextProps.theme !== this.props.theme) {
             this.setState({
                 styles: getStyles(nextProps.theme),
@@ -33,14 +33,14 @@ class Compare extends Component {
     /******************************************
      * METHODS
      *****************************************/
-    changeTab(selectedTab) {
+    changeTab (selectedTab) {
         this.setState({ selectedTab });
     }
 
     /******************************************
      * RENDERING
      *****************************************/
-    render() {
+    render () {
         var { db, dimensions, location, sqldb, theme } = this.props;
         var { selectedTab, styles } = this.state;
 
