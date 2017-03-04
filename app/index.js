@@ -11,7 +11,6 @@ import SQLite from 'react-native-sqlite-storage';
 // COMPONENTS
 import Compare from './flows/Compare';
 import Loading from 'democracy/app/components/Loading';
-//import Login from './flows/Login';
 // CONFIGS
 import themes from './themes';
 import firebaseConfig from '../firebase.config';
@@ -30,11 +29,11 @@ export default class App extends Component {
         // Get initial device dimensions (orientation changes handled by View.onLayout)
         var dimensions = Dimensions.get('window');
 
-        // Initialize connection to Firebase db
+        // Initialize connection to Firebase db (sync)
         firebase.initializeApp(firebaseConfig);
         this.db = firebase.database();
 
-        // Initialize connection to SQLite db
+        // Initialize connection to SQLite db (async)
         SQLite.openDatabase({
             name: 'democracy.db', createFromLocation: '~databases/democracy.db', readOnly: true
         })
@@ -48,18 +47,14 @@ export default class App extends Component {
 
         // Get initial state
         this.state = {
-            styles: getStyles(themes.darkTheme),
+            sharedStyles: getStyles(themes.darkTheme),
             theme: themes.darkTheme,
             dimensions,
-            accessToken: false,
             location
         };
     }
 
     componentDidMount () {
-        // if (this.login) {
-        //     this.login.getAccessToken((accessToken) => this.setState({ accessToken }));
-        // }
         location = AsyncStorage.getItem('@hoomanlogic-democracy:location').then(location => {
             if (location) {
                 this.setState({ location });
@@ -77,23 +72,18 @@ export default class App extends Component {
      * RENDERING
      *****************************************/
     render () {
-        var { /*accessToken, */dimensions, location, isSqlDbReady, styles, theme } = this.state;
+        var { dimensions, location, isSqlDbReady, sharedStyles, theme } = this.state;
         var content;
 
         if (!isSqlDbReady) {
-            content = <View style={styles.container}><Loading/></View>;
+            content = <View style={sharedStyles.container}><Loading/></View>;
         }
         else {
-            // if (accessToken) {
-            content = <Compare db={this.db} sqldb={this.sqldb} onSubscribe={this.updateLocation} { ...{ dimensions, location, theme } }/>;
-            // }
-            // else {            
-            //     flow = <Login ref={ref => this.login = ref} onAuthenticated={(accessToken) => this.setState({ accessToken })} { ...{ dimensions, theme } }/>
-            // }
+            content = <Compare db={this.db} sqldb={this.sqldb} onSubscribe={this.updateLocation} { ...{ dimensions, location, sharedStyles, theme } }/>;
         }
 
         return (
-            <View style={styles.container} onLayout={event => this.setState({ dimensions: event.nativeEvent.layout })}>
+            <View style={sharedStyles.container} onLayout={event => this.setState({ dimensions: event.nativeEvent.layout })}>
                 {content}
             </View>
         );
@@ -104,10 +94,33 @@ export default class App extends Component {
  * STYLES
  *****************************************/
 const getStyles = function (theme) {
+    var noBackground = 'transparent';
     return StyleSheet.create({
         container: {
             flex: 1,
             backgroundColor: theme.bgColor,
+        },
+        list: {
+            backgroundColor: noBackground,
+            borderBottomWidth: 0,
+            borderTopWidth: 0,
+            marginLeft: 0,
+            marginTop: 0,
+        },
+        listItem: {
+            backgroundColor: noBackground,
+            borderBottomWidth: 1,
+            borderBottomColor: theme.bgColorLow,
+            marginTop: 0,
+        },
+        row: {
+            flex: 1,
+            flexDirection: 'row',
+            padding: 8,
+            backgroundColor: noBackground,
+            marginTop: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: theme.bgColorLow,
         },
     });
 };

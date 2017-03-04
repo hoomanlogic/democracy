@@ -1,6 +1,7 @@
 // @flow
 import React, { Component } from 'react';
 import {
+    BackAndroid,
     ScrollView,
     StyleSheet,
     Text,
@@ -11,6 +12,7 @@ import {
     List,
     ListItem
 } from 'react-native-elements';
+import FlowCrumb from 'democracy/app/components/FlowCrumb';
 import Loading from 'democracy/app/components/Loading';
 
 class Issues extends Component {
@@ -29,6 +31,16 @@ class Issues extends Component {
 
     componentDidMount () {
         var { db } = this.props;
+
+        // Back up flow
+        BackAndroid.addEventListener('hardwareBackPress', () => {
+            if (this.state.selectedIssue) {
+                this.setState({ selectedIssue: null });
+                return true;
+            }
+            return false;
+        });
+
         db.ref('issue').once('value', snapshot => {
             // Convert object snapshot to array
             var issues = snapshot.val();
@@ -107,53 +119,40 @@ class Issues extends Component {
      * RENDERING
      **************************************************************/
     render () {
-        var { style, theme } = this.props;
+        var { sharedStyles, style, theme } = this.props;
         var { activityMap, issues, selectedIssue, styles } = this.state;
         var keys, pane;
 
         if (!issues) {
-            return <Loading theme={theme} />;
+            return <Loading theme={theme}/>;
         }
 
         if (selectedIssue) {
             if (!Object.keys(activityMap).length) {
-                return <Loading theme={theme} />;
+                return <Loading theme={theme}/>;
             }
             keys = Object.keys(activityMap);
             keys.reverse();
-            // pane = (
-            //     <View>{activityMap.name} - {key}</View>
-            // );
-            // {keys.map((key, i) => {
-            //     activityMap[key].results
-            //     return (
-            //         <ListItem
-            //             avatar={{ uri: 'http:' + row.icon }}
-            //             containerStyle={styles.listItem}
-            //             titleStyle={styles.listItemTitle}
-            //             key={i}
-            //             onPress={() => this.pressRow(row)}
-            //             roundAvatar
-            //             title={row.name}
-            //             underlayColor={styles.icon}
-            //             avatarStyle={styles.icon}
-            //         />
-            //     );
-            // })}
             pane = (
                 <ScrollView keyboardShouldPersistTaps="always">
-                    <View><Text>{issues.filter(a => a.key === selectedIssue)[0].name}</Text></View>
-                    <List containerStyle={styles.list}>
+                    <FlowCrumb title={issues.filter(a => a.key === selectedIssue)[0].name} theme={theme} onPress={() => this.setState({ selectedIssue: null })}/>
+                    <List containerStyle={sharedStyles.list}>
                         {
                             keys.map(key => { return { ...activityMap[key], key }; }).map((row, i) => (
-                                <ListItem
-                                    containerStyle={styles.listItem}
-                                    titleStyle={styles.listItemTitle}
+                                <View
                                     key={i}
-                                    onPress={() => this.pressActivityRow(row)}
-                                    title={row.text}
-                                    underlayColor="transparent"
-                                />
+                                    style={sharedStyles.row}
+                                >
+                                    <View style={styles.liTitle}>
+                                        <Text style={styles.listItemTitle}>{row.text}</Text>
+                                    </View>
+                                    <View style={styles.thumb}>
+                                        <Icon color={theme.foreColorLow} name="thumb-up" type="material" size={26} onPress={() => this.pressActivityRow(row)}></Icon>
+                                    </View>
+                                    <View style={styles.thumb}>
+                                        <Icon color={theme.foreColorLow} name="thumb-down" type="material" size={26} onPress={() => this.pressActivityRow(row)}></Icon>
+                                    </View>
+                                </View>
                             ))
                         }
                     </List>
@@ -163,12 +162,12 @@ class Issues extends Component {
         else {            
             pane = (
                 <ScrollView keyboardShouldPersistTaps="always">
-                    <List containerStyle={styles.list}>
+                    <List containerStyle={sharedStyles.list}>
                         {
                             issues.map((row, i) => (
                                 <ListItem
                                     avatar={{ uri: 'http:' + row.icon }}
-                                    containerStyle={styles.listItem}
+                                    containerStyle={sharedStyles.listItem}
                                     titleStyle={styles.listItemTitle}
                                     key={i}
                                     onPress={() => this.pressRow(row)}
@@ -198,28 +197,17 @@ class Issues extends Component {
 const noBackground = 'transparent';
 const getStyles = function (theme) {
     return StyleSheet.create({
-        list: {
-            backgroundColor: noBackground,
-            marginLeft: 0,
-            marginTop: 0,
-            marginBottom: 70,
+        liTitle: {
+            flex: 1
         },
-        listItem: {
-            backgroundColor: noBackground,
-            marginTop: 0,
-            borderBottomWidth: 1,
-            borderBottomColor: theme.bgColorLow,
+        thumb: {
+            padding: 8,
         },
         listItemTitle: {
             color: theme.foreColor,
         },
         icon: {
             backgroundColor: noBackground,
-        },
-        row: {
-            flex: 1,
-            flexDirection: 'row',
-            padding: 8,
         },
     });
 };

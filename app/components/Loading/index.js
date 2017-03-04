@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
     ActivityIndicator,
@@ -13,7 +12,7 @@ function Loading () {
     };
     return (
         <View style={style}>
-            <ActivityIndicator size="large" />
+            <ActivityIndicator size="large"/>
         </View>
     );
 }

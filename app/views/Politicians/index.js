@@ -1,15 +1,16 @@
 // @flow
 import React, { Component } from 'react';
 import {
+    BackAndroid,
     ScrollView,
     StyleSheet,
     View
 } from 'react-native';
 import {
-    Icon,
     List,
     ListItem
 } from 'react-native-elements';
+import FlowCrumb from 'democracy/app/components/FlowCrumb';
 import Loading from 'democracy/app/components/Loading';
 
 class Politicians extends Component {
@@ -26,35 +27,48 @@ class Politicians extends Component {
     }
 
     componentDidMount () {
-        var { body, sqldb } = this.props;
+        var { sqldb } = this.props;
 
+        // Back up flow
+        BackAndroid.addEventListener('hardwareBackPress', () => {
+            if (this.state.selectedBody) {
+                // Clear selection to return to Body/Division list
+                this.setState({
+                    selectedBody: null,
+                    selectedDivision: null
+                });
+                return true;
+            }
+            return false;
+        });
 
         sqldb.executeSql(
-            `SELECT p.icon, p.name, p.sort, m.termEnd, m.refId
-            FROM politician p INNER JOIN membership m ON p.id = m.politicianId
-            WHERE m.bodyId = '${body}'`
+            `SELECT d.id, d.name, d.bodyId, b.name AS bodyName
+            FROM body b INNER JOIN division d ON b.id = d.bodyId
+            ORDER BY b.name, d.name`
         )
         .then(([results]) => {
             var len = results.rows.length;
-            var politicians = [];
+            var divisions = [];
+            var currentBody;
             for (let i = 0; i < len; i++) {
                 let row = results.rows.item(i);
-                politicians.push(row);
+                // Start with All option for each body of government
+                if (currentBody !== row.bodyId) {
+                    divisions.push({
+                        id: '',
+                        name: 'All',
+                        bodyId: row.bodyId,
+                        bodyName: row.bodyName,
+                    });
+                    currentBody = row.bodyId;
+                }
+                // Add this row
+                divisions.push(row);
             }
 
-            // Sort by last name first
-            politicians.sort((a, b) => {
-                if (a.sort < b.sort) {
-                    return -1;
-                }
-                else if (a.sort > b.sort) {
-                    return 1;
-                }
-                return 0;
-            });
-
             // Set component state
-            this.setState({ politicians });
+            this.setState({ divisions });
         })
         .catch((err) => {
             console.log(err);
@@ -81,6 +95,47 @@ class Politicians extends Component {
         // });
     }
 
+    getPoliticians (bodyId, divisionId) {
+        var { sqldb } = this.props;
+        var query;
+        if (divisionId) {
+            query = `SELECT p.icon, p.name, p.sort, m.termEnd, m.refId
+            FROM politician p INNER JOIN membership m ON p.id = m.politicianId
+            WHERE m.bodyId = '${bodyId}' AND m.divisionId = '${divisionId}'`;
+        }
+        else {
+            query = `SELECT p.icon AS icon, p.name AS name, p.sort AS sort, m.termEnd AS termEnd, m.refId AS refId, d.name AS divisionName
+            FROM politician p INNER JOIN (membership m LEFT JOIN division d ON m.bodyId = d.bodyId AND m.divisionId = d.id) ON p.id = m.politicianId
+            WHERE m.bodyId = '${bodyId}'`;
+        }
+        sqldb.executeSql(query)
+        .then(([results]) => {
+            var len = results.rows.length;
+            var politicians = [];
+            for (let i = 0; i < len; i++) {
+                let row = results.rows.item(i);
+                politicians.push(row);
+            }
+
+            // Sort by last name first
+            politicians.sort((a, b) => {
+                if (a.sort < b.sort) {
+                    return -1;
+                }
+                else if (a.sort > b.sort) {
+                    return 1;
+                }
+                return 0;
+            });
+
+            // Set component state
+            this.setState({ politicians });
+        })
+        .catch((err) => {
+            console.error(err);
+        });
+    }
+
     /***************************************************************
      * EVENT HANDLING
      **************************************************************/
@@ -88,31 +143,45 @@ class Politicians extends Component {
         console.log(row);
     }
 
+    pressDivisionRow (row) {
+        // Set selected state
+        this.setState({ selectedBody: row.bodyId , selectedDivision: row.id, politicians: null });
+        this.getPoliticians(row.bodyId, row.id);
+    }
+
     /***************************************************************
      * RENDERING
      **************************************************************/
     render () {
-        var { style } = this.props;
-        var { politicians, styles } = this.state;
-
-        if (!politicians) {
-            return <View style={style}><Loading/></View>;
-        }
-
-        return (
-            <View style={style}>
+        var { sharedStyles, style, theme } = this.props;
+        var { divisions, politicians, selectedBody, selectedDivision, styles } = this.state;
+        var pane;
+        
+        if (selectedBody) {
+            if (!politicians) {
+                return <View style={style}><Loading/></View>;
+            }
+            var division = divisions.filter(a => a.id === selectedDivision && a.bodyId === selectedBody)[0];
+            pane = (
                 <ScrollView keyboardShouldPersistTaps="always">
-                    <List containerStyle={styles.list}>
+                    <FlowCrumb
+                        title={division.name}
+                        subtitle={division.bodyName}
+                        theme={theme}
+                        onPress={() => this.setState({ selectedBody: null, selectedDivision: null, politicians: null })}
+                    />
+                    <List containerStyle={sharedStyles.list}>
                         {
                             politicians.map((row, i) => (
                                 <ListItem
                                     avatar={{ uri: 'https:' + row.icon }}
-                                    containerStyle={styles.listItem}
+                                    containerStyle={sharedStyles.listItem}
                                     titleStyle={styles.listItemTitle}
                                     key={i}
                                     onPress={() => this.pressRow(row)}
                                     roundAvatar
                                     title={row.name}
+                                    subtitle={selectedDivision ? undefined : row.divisionName}
                                     underlayColor="transparent"
                                     avatarStyle={styles.icon}
                                 />
@@ -120,54 +189,38 @@ class Politicians extends Component {
                         }
                     </List>
                 </ScrollView>
+            );
+        }
+        else {
+            if (!divisions) {
+                return <View style={style}><Loading/></View>;
+            }
+            pane = (
+                <ScrollView keyboardShouldPersistTaps="always">
+                    <List containerStyle={sharedStyles.list}>
+                        {
+                            divisions.map((row, i) => (
+                                <ListItem
+                                    containerStyle={sharedStyles.listItem}
+                                    titleStyle={styles.listItemTitle}
+                                    key={i}
+                                    onPress={() => this.pressDivisionRow(row)}
+                                    title={row.name}
+                                    subtitle={row.bodyName}
+                                    underlayColor="transparent"
+                                />
+                            ))
+                        }
+                    </List>
+                </ScrollView>
+            );
+        }
+            
+        return (
+            <View style={style}>
+                {pane}
             </View>
         );
-
-        // filteredList = filteredList.map(row => {
-        //     var votingScore = 0;
-        //     if (row.memberOf['usa-senate']) {
-        //         votes.forEach(vote => {
-        //             switch (vote.results[row.memberOf['usa-senate'].id]) {
-        //                 case 0: // Nay on contentious vote
-        //                     votingScore = votingScore + 1;
-        //                     break;
-        //                 case 1: // Yea on contentious vote
-        //                     votingScore = votingScore - 2;
-        //                     break;
-        //                 case -1: // Did not vote on contentious vote
-        //                     votingScore = votingScore - 1;
-        //             }
-        //         });
-        //     }
-        //     return { 
-        //         ...row,
-        //         score: votingScore
-        //     };
-        // });
-
-        // return (
-        //     <View style={style}>
-        //         <ScrollView keyboardShouldPersistTaps="always">
-        //             <List containerStyle={styles.list}>
-        //                 {
-        //                     filteredList.map((row, i) => (
-        //                         <ListItem
-        //                             avatar={{ uri: 'https:' + row.icon }}
-        //                             containerStyle={styles.listItem}
-        //                             titleStyle={styles.listItemTitle}
-        //                             key={i}
-        //                             onPress={() => this.pressRow(row)}
-        //                             roundAvatar
-        //                             title={`${row.name} [${row.score}]`}
-        //                             underlayColor={styles.icon}
-        //                             avatarStyle={styles.icon}
-        //                         />
-        //                     ))
-        //                 }
-        //             </List>
-        //         </ScrollView>
-        //     </View>
-        // );
     }
 }
 
@@ -177,23 +230,13 @@ class Politicians extends Component {
 const noBackground = 'transparent';
 const getStyles = function (theme) {
     return StyleSheet.create({
-        list: {
-            backgroundColor: noBackground,
-            marginLeft: 0,
-            marginTop: 0,
-            marginBottom: 70,
-        },
-        listItem: {
-            backgroundColor: noBackground,
-            marginTop: 0,
-            borderBottomWidth: 1,
-            borderBottomColor: theme.bgColorLow,
-        },
         listItemTitle: {
             color: theme.foreColor,
         },
         icon: {
             backgroundColor: noBackground,
+            height: 50,
+            width: 50,
         },
         row: {
             flex: 1,

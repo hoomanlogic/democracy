@@ -6,7 +6,6 @@ import {
     View
 } from 'react-native';
 import {
-    Icon,
     List,
     ListItem
 } from 'react-native-elements';

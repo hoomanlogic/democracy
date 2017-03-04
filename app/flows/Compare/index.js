@@ -41,15 +41,13 @@ class Compare extends Component {
      * RENDERING
      *****************************************/
     render () {
-        var { db, dimensions, location, sqldb, theme } = this.props;
+        var { db, dimensions, location, sharedStyles, sqldb, theme } = this.props;
         var { selectedTab, styles } = this.state;
 
         var isIssues = selectedTab === 'ISSUES';
         var isPoliticians = selectedTab === 'POLITICIANS';
-        var isSubscriptions = selectedTab === 'SUBSCRIPTIONS';
         var renderIssuesIcon = () => <Icon name="comments" type="foundation" size={26}/>;
         var renderPoliticiansIcon = () => <Icon name="torsos-all" type="foundation" size={26}/>;
-        var renderSubscriptionsIcon = () => <Icon name="list" type="foundation" size={26}/>;
 
         return (
             <Tabs
@@ -67,6 +65,7 @@ class Compare extends Component {
                         sqldb={sqldb}
                         dimensions={dimensions}
                         style={styles.content}
+                        sharedStyles={sharedStyles}
                         theme={theme}
                     />
                 </Tab>
@@ -84,24 +83,7 @@ class Compare extends Component {
                         sqldb={sqldb}
                         dimensions={dimensions}
                         style={styles.content}
-                        theme={theme}
-                    />
-                </Tab>
-                <Tab
-                    onPress={() => this.changeTab('SUBSCRIPTIONS')}
-                    renderIcon={renderSubscriptionsIcon}
-                    renderSelectedIcon={renderSubscriptionsIcon}
-                    selected={isSubscriptions}
-                    title={isSubscriptions ? 'SUBSCRIPTIONS' : null}
-                >
-                    <Subscriptions
-                        onSubscribe={this.props.onSubscribe}
-                        onTab={(tab) => this.changeTab(tab)}
-                        current={location}
-                        db={db}
-                        sqldb={sqldb}
-                        dimensions={dimensions}
-                        style={styles.content}
+                        sharedStyles={sharedStyles}
                         theme={theme}
                     />
                 </Tab>
