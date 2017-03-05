@@ -93,7 +93,7 @@ class Issues extends Component {
         });
     }
 
-    pressRow (row) {
+    pressIssueRow (row) {
         var { db } = this.props;
         var activityMap = {};
         this.setState({
@@ -170,7 +170,7 @@ class Issues extends Component {
                                     containerStyle={sharedStyles.listItem}
                                     titleStyle={styles.listItemTitle}
                                     key={i}
-                                    onPress={() => this.pressRow(row)}
+                                    onPress={() => this.pressIssueRow(row)}
                                     roundAvatar
                                     title={row.name}
                                     underlayColor="transparent"
