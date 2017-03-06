@@ -152,10 +152,10 @@ class Politicians extends Component {
 
     getVotes (politicianId) {
         var { sqldb } = this.props;
-        sqldb.executeSql(`SELECT t.name, t.date, v.vote, t.tieBreaker, t.pass
-            FROM tally t INNER JOIN vote v ON t.id = v.tallyId
+        sqldb.executeSql(`SELECT m.name, m.date, v.vote, m.tieBreaker, m.pass
+            FROM motion m INNER JOIN vote v ON m.id = v.motionId
             WHERE v.politicianId = '${politicianId}'
-            ORDER BY t.date DESC`)
+            ORDER BY m.date DESC`)
         .then(([results]) => {
             var len = results.rows.length;
             var votes = [];

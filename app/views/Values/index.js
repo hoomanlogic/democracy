@@ -179,18 +179,25 @@ class Values extends Component {
                         <List containerStyle={sharedStyles.list}>
                             {
                                 motions.map((row, i) => (
-                                    <View
-                                        key={i}
-                                        style={sharedStyles.row}
-                                    >
-                                        <View style={styles.liTitle}>
+                                    <View key={i}>
+                                        <View style={styles.listItemTitleBox}>
                                             <Text style={styles.listItemTitle}>{row.name}</Text>
                                         </View>
-                                        <View style={styles.thumb}>
-                                            <Icon color={theme.foreColorLow} name="thumb-up" type="material" size={26} onPress={() => this.pressThumbUp(row)}></Icon>
-                                        </View>
-                                        <View style={styles.thumb}>
-                                            <Icon color={theme.foreColorLow} name="thumb-down" type="material" size={26} onPress={() => this.pressThumbDown(row)}></Icon>
+                                        <View
+                                            style={sharedStyles.row}
+                                        >
+                                            <View style={styles.thumb}>
+                                                <Icon color={theme.foreColorLow} name={row.pass ? 'check' : 'close'} color={row.pass ? 'green' : 'red'} type="material" size={26}></Icon>
+                                            </View>
+                                            <View style={styles.date}>
+                                                <Text style={styles.listItemSubtitle}>{new Date(Date.parse(row.date)).toLocaleDateString()}</Text>
+                                            </View>
+                                            <View style={styles.thumb}>
+                                                <Icon color={theme.foreColorLow} name="thumb-up" type="material" size={26} onPress={() => this.pressThumbUp(row)}></Icon>
+                                            </View>
+                                            <View style={styles.thumb}>
+                                                <Icon color={theme.foreColorLow} name="thumb-down" type="material" size={26} onPress={() => this.pressThumbDown(row)}></Icon>
+                                            </View>
                                         </View>
                                     </View>
                                 ))
@@ -221,18 +228,34 @@ class Values extends Component {
 const noBackground = 'transparent';
 const getStyles = function (theme) {
     return StyleSheet.create({
-        liTitle: {
-            flex: 1
+        listItemTitleBox: {
+            padding: 8,
+        },
+        date: {
+            flex: 1,
         },
         thumb: {
-            padding: 8,
+            paddingLeft: 8,
+            paddingRight: 8,
         },
         listItemTitle: {
             color: theme.foreColor,
         },
+        listItemSubtitle: {
+            color: theme.foreColorLow,
+            textAlign: 'center',
+        },
         icon: {
             backgroundColor: noBackground,
         },
+        row: {
+            flex: 1,
+            flexDirection: 'row',
+            padding: 8,
+            backgroundColor: theme.bgColorLow,
+            marginTop: 0,
+            borderBottomWidth: 1,
+        }
     });
 };
 

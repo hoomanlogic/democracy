@@ -43,21 +43,21 @@ class Compare extends Component {
         var { db, dimensions, location, sharedStyles, sqldb, theme } = this.props;
         var { selectedTab, styles } = this.state;
 
-        var isIssues = selectedTab === 'ISSUES';
+        var isValues = selectedTab === 'VALUES';
         var isPoliticians = selectedTab === 'POLITICIANS';
-        var renderIssuesIcon = () => <Icon name="comments" type="foundation" size={26}/>;
-        var renderPoliticiansIcon = () => <Icon name="torsos-all" type="foundation" size={26}/>;
+        var renderValuesIcon = () => <Icon name="attach-money" type="material" size={26} color={isValues ? theme.bgColorHigh : theme.bgColor}/>;
+        var renderPoliticiansIcon = () => <Icon name="torsos-all" type="foundation" size={26} color={isPoliticians ? theme.bgColorHigh : theme.bgColor}/>;
 
         return (
             <Tabs
                 tabBarStyle={styles.tabBar}
             >
                 <Tab
-                    onPress={() => this.changeTab('ISSUES')}
-                    renderIcon={renderIssuesIcon}
-                    renderSelectedIcon={renderIssuesIcon}
-                    selected={isIssues}
-                    title={isIssues ? 'ISSUES' : null}
+                    onPress={() => this.changeTab('VALUES')}
+                    renderIcon={renderValuesIcon}
+                    renderSelectedIcon={renderValuesIcon}
+                    selected={isValues}
+                    title={isValues ? 'VALUES' : null}
                 >
                     <Values
                         db={db}
