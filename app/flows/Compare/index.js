@@ -5,9 +5,8 @@ import {
 import {
     Tabs, Tab, Icon
 } from 'react-native-elements';
-import Issues from 'democracy/app/views/Issues';
+import Values from 'democracy/app/views/Values';
 import Politicians from 'democracy/app/views/Politicians';
-import Subscriptions from 'democracy/app/views/Subscriptions';
 
 class Compare extends Component {
     /******************************************
@@ -60,7 +59,7 @@ class Compare extends Component {
                     selected={isIssues}
                     title={isIssues ? 'ISSUES' : null}
                 >
-                    <Issues
+                    <Values
                         db={db}
                         sqldb={sqldb}
                         dimensions={dimensions}

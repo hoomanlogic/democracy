@@ -57,7 +57,6 @@ class Politicians extends Component {
         });
         // Return true to flag the hardware backpress as handled
         return true;
-        
     }
 
     pressDivision = (row) => {
