@@ -20,28 +20,72 @@ class Politicians extends Component {
     constructor (props) {
         super(props);
         this.state = {
+            divisions: null,
+            flow: Flow.Divisions,
             politicians: null,
-            votes: null,
+            selectedDivision: null,
+            selectedPolitician: null,
             styles: getStyles(props.theme),
+            votes: null,
         };
     }
 
     componentDidMount () {
-        var { sqldb } = this.props;
+        // Listen for hardware back press to reverse flow
+        BackAndroid.addEventListener('hardwareBackPress', this.pressBack);
+        // Get list of divisions
+        this.getDivisions();
+    }
 
-        // Back up flow
-        BackAndroid.addEventListener('hardwareBackPress', () => {
-            if (this.state.selectedBody) {
-                // Clear selection to return to Body/Division list
-                this.setState({
-                    selectedBody: null,
-                    selectedDivision: null
-                });
-                return true;
-            }
+    /***************************************************************
+     * EVENT HANDLING
+     **************************************************************/
+    pressBack = () => {
+        var { flow, politicians } = this.state;
+        // Do not handle the hardware backpress
+        // when at the beginning of the flow
+        if (flow === 0) {
             return false;
+        }
+        // Back up to previous flow pane and clear results of it.
+        // This is done to ensure the loading indicator will display,
+        // rather than displays the results for a previous selection.
+        this.setState({ 
+            flow: flow - 1,
+            politicians: flow < 2 ? null : politicians,
+            votes: null,
         });
+        // Return true to flag the hardware backpress as handled
+        return true;
+        
+    }
 
+    pressDivision = (row) => {
+        // Set selected division and advance flow
+        this.setState({
+            flow: Flow.Policitians,
+            selectedDivision: row
+        });
+        // Get list of politicians that are members of the selected division
+        this.getPoliticians(row.bodyId, row.id);
+    }
+
+    pressPolitician = (row) => {
+        // Set selected politician and advance flow
+        this.setState({
+            flow: Flow.Politician,
+            selectedPolitician: row
+        });
+        // Get list of votes for the selected politician
+        this.getVotes(row.id);
+    }
+
+    /***************************************************************
+     * METHODS
+     **************************************************************/
+    getDivisions () {
+        var { sqldb } = this.props;
+        // Get bodies/divisions of government
         sqldb.executeSql(
             `SELECT d.id, d.name, d.bodyId, b.name AS bodyName
             FROM body b INNER JOIN division d ON b.id = d.bodyId
@@ -71,28 +115,8 @@ class Politicians extends Component {
             this.setState({ divisions });
         })
         .catch((err) => {
-            console.log(err);
+            console.error(err);
         });
-
-        // db.ref('vote/usa-senate').once('value', snapshot => {
-        //     // Convert object snapshot to array
-        //     var votes = snapshot.val();
-        //     votes = Object.keys(snapshot.val()).map(key => votes[key]);
-
-        //     // Sort by descending date
-        //     votes.sort((a, b) => {
-        //         if (a.date < b.date) {
-        //             return 1;
-        //         }
-        //         else if (a.date > b.date) {
-        //             return -1;
-        //         }
-        //         return 0;
-        //     });
-
-        //     // Set component state
-        //     this.setState({ votes });
-        // });
     }
 
     getPoliticians (bodyId, divisionId) {
@@ -129,11 +153,10 @@ class Politicians extends Component {
 
     getVotes (politicianId) {
         var { sqldb } = this.props;
-        var query = `SELECT t.name, t.date, v.vote, t.tieBreaker, t.pass
+        sqldb.executeSql(`SELECT t.name, t.date, v.vote, t.tieBreaker, t.pass
             FROM tally t INNER JOIN vote v ON t.id = v.tallyId
             WHERE v.politicianId = '${politicianId}'
-            ORDER BY t.date DESC`;
-        sqldb.executeSql(query)
+            ORDER BY t.date DESC`)
         .then(([results]) => {
             var len = results.rows.length;
             var votes = [];
@@ -148,20 +171,6 @@ class Politicians extends Component {
         .catch((err) => {
             console.error(err);
         });
-    }    
-
-    /***************************************************************
-     * EVENT HANDLING
-     **************************************************************/
-    pressPoliticianRow (row) {
-        this.setState({ selectedPoliticianRow: row });
-        this.getVotes(row.id);
-    }
-
-    pressDivisionRow (row) {
-        // Set selected state
-        this.setState({ selectedBody: row.bodyId , selectedDivision: row.id, politicians: null });
-        this.getPoliticians(row.bodyId, row.id);
     }
 
     /***************************************************************
@@ -169,108 +178,114 @@ class Politicians extends Component {
      **************************************************************/
     render () {
         var { sharedStyles, style, theme } = this.props;
-        var { divisions, politicians, selectedBody, selectedDivision, selectedPoliticianRow, styles, votes } = this.state;
+        var { divisions, flow, politicians, selectedDivision, selectedPolitician, styles, votes } = this.state;
         var pane;
         
-        if (selectedPoliticianRow) {
-            // TODO: Show all issues politician has voted on
-            // TODO: Show "the talk", pull twitter feeds related to this politician
-            if (!votes) {
-                return <View style={style}><Loading/></View>;
-            }
-            pane = (
-                <ScrollView keyboardShouldPersistTaps="always">
-                    <FlowCrumb
-                        title={selectedPoliticianRow.name}
-                        subtitle={`${selectedPoliticianRow.bodyName}${selectedPoliticianRow.divisionName ? ': ' + selectedPoliticianRow.divisionName : ''}`}
-                        theme={theme}
-                        onPress={() => this.setState({ selectedPoliticianRow: null, votes: null })}
-                    />
-                    <List containerStyle={sharedStyles.list}>
-                        {
-                            votes.map((row, i) => (
-                                <ListItem
-                                    containerStyle={sharedStyles.listItem}
-                                    titleStyle={styles.listItemTitle}
-                                    key={i}
-                                    title={row.name}
-                                    subtitle={new Date(Date.parse(row.date)).toLocaleDateString()}
-                                    underlayColor="transparent"
-                                    avatarStyle={styles.icon}
-                                    leftIcon={row.pass ? { name: 'check', color: 'green' } : { name: 'close', color: 'red' }}
-                                    rightIcon={row.vote === 1 ? { name: 'thumb-up', type: 'material' } : (row.vote === 0 ? { name: 'thumb-down', type: 'material' } : { name: 'not-interested', type: 'material' })}
-                                />
-                            ))
-                        }
-                    </List>
-                </ScrollView>
-            );            
-        }
-        else if (selectedBody) {
-            if (!politicians) {
-                return <View style={style}><Loading/></View>;
-            }
-            var division = divisions.filter(a => a.id === selectedDivision && a.bodyId === selectedBody)[0];
-            pane = (
-                <ScrollView keyboardShouldPersistTaps="always">
-                    <FlowCrumb
-                        title={division.name}
-                        subtitle={division.bodyName}
-                        theme={theme}
-                        onPress={() => this.setState({ selectedBody: null, selectedDivision: null, politicians: null })}
-                    />
-                    <List containerStyle={sharedStyles.list}>
-                        {
-                            politicians.map((row, i) => (
-                                <ListItem
-                                    avatar={{ uri: 'https:' + row.icon }}
-                                    containerStyle={sharedStyles.listItem}
-                                    titleStyle={styles.listItemTitle}
-                                    key={i}
-                                    onPress={() => this.pressPoliticianRow(row)}
-                                    title={row.name}
-                                    subtitle={selectedDivision ? undefined : row.divisionName}
-                                    underlayColor="transparent"
-                                    avatarStyle={styles.icon}
-                                />
-                            ))
-                        }
-                    </List>
-                </ScrollView>
-            );
-        }
-        else {
-            if (!divisions) {
-                return <View style={style}><Loading/></View>;
-            }
-            // TODO: Switch to ListView, renderSectionHeader, cloneWithRowsAndSections solution
-            pane = (
-                <ScrollView keyboardShouldPersistTaps="always">
-                    <List containerStyle={sharedStyles.list}>
-                        {
-                            divisions.map((row, i) => {
-                                return (
+        switch (flow) {
+            case Flow.Divisions:
+                if (!divisions) {
+                    return this.renderLoading(style);
+                }
+                // TODO: Switch to ListView, renderSectionHeader, cloneWithRowsAndSections solution
+                pane = (
+                    <ScrollView keyboardShouldPersistTaps="always">
+                        <List containerStyle={sharedStyles.list}>
+                            {
+                                divisions.map((row, i) => {
+                                    return (
+                                        <ListItem
+                                            containerStyle={sharedStyles.listItem}
+                                            titleStyle={styles.listItemTitle}
+                                            key={i}
+                                            onPress={() => this.pressDivision(row)}
+                                            title={row.name}
+                                            subtitle={row.bodyName}
+                                            underlayColor="transparent"
+                                        />
+                                    );
+                                })
+                            }
+                        </List>
+                    </ScrollView>
+                );
+                break;
+            case Flow.Policitians:
+                if (!politicians) {
+                    return this.renderLoading(style);
+                }
+                pane = (
+                    <ScrollView keyboardShouldPersistTaps="always">
+                        <FlowCrumb
+                            title={selectedDivision.name}
+                            subtitle={selectedDivision.bodyName}
+                            theme={theme}
+                            onPress={this.pressBack}
+                        />
+                        <List containerStyle={sharedStyles.list}>
+                            {
+                                politicians.map((row, i) => (
+                                    <ListItem
+                                        avatar={{ uri: 'https:' + row.icon }}
+                                        containerStyle={sharedStyles.listItem}
+                                        titleStyle={styles.listItemTitle}
+                                        key={i}
+                                        onPress={() => this.pressPolitician(row)}
+                                        title={row.name}
+                                        subtitle={selectedDivision ? undefined : row.divisionName}
+                                        underlayColor="transparent"
+                                        avatarStyle={styles.icon}
+                                    />
+                                ))
+                            }
+                        </List>
+                    </ScrollView>
+                );
+                break;
+            case Flow.Politician:
+                // TODO: Show all issues politician has voted on
+                // TODO: Show "the talk", pull twitter feeds related to this politician
+                if (!votes) {
+                    return this.renderLoading(style);
+                }
+                pane = (
+                    <ScrollView keyboardShouldPersistTaps="always">
+                        <FlowCrumb
+                            title={selectedPolitician.name}
+                            subtitle={`${selectedPolitician.bodyName}${selectedPolitician.divisionName ? ': ' + selectedPolitician.divisionName : ''}`}
+                            theme={theme}
+                            onPress={this.pressBack}
+                        />
+                        <List containerStyle={sharedStyles.list}>
+                            {
+                                votes.map((row, i) => (
                                     <ListItem
                                         containerStyle={sharedStyles.listItem}
                                         titleStyle={styles.listItemTitle}
                                         key={i}
-                                        onPress={() => this.pressDivisionRow(row)}
                                         title={row.name}
-                                        subtitle={row.bodyName}
+                                        subtitle={new Date(Date.parse(row.date)).toLocaleDateString()}
                                         underlayColor="transparent"
+                                        avatarStyle={styles.icon}
+                                        leftIcon={row.pass ? { name: 'check', color: 'green' } : { name: 'close', color: 'red' }}
+                                        rightIcon={row.vote === 1 ? { name: 'thumb-up', type: 'material' } : (row.vote === 0 ? { name: 'thumb-down', type: 'material' } : { name: 'not-interested', type: 'material' })}
                                     />
-                                );
-                            })
-                        }
-                    </List>
-                </ScrollView>
-            );
+                                ))
+                            }
+                        </List>
+                    </ScrollView>
+                );   
         }
             
         return (
             <View style={style}>
                 {pane}
             </View>
+        );
+    }
+
+    renderLoading (style) {
+        return (
+            <View style={style}><Loading/></View>
         );
     }
 }
@@ -295,6 +310,15 @@ const getStyles = function (theme) {
             padding: 8,
         },
     });
+};
+
+/***************************************************************
+ * PRIVATE
+ **************************************************************/
+const Flow = {
+    Divisions: 0,
+    Policitians: 1,
+    Politician: 2
 };
 
 /***************************************************************
