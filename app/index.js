@@ -35,7 +35,7 @@ export default class App extends Component {
 
         // Initialize connection to SQLite db (async)
         SQLite.openDatabase({
-            name: 'democracy.db', createFromLocation: '~databases/democracy.db', readOnly: true
+            name: 'democracy.db', createFromLocation: '~databases/democracy.db'
         })
         .then((sqldb) => {
             this.sqldb = sqldb;
